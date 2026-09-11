@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daylight Dashboard</title>
+
+    <!--
+      FLASH PREVENTION — hide dashboard before any JS or CSS loads.
+      The intro state machine will reveal it after the welcome sequence.
+    -->
+    <style>
+      .dashboard { visibility: hidden; }
+    </style>
+
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <!--
+      Daylight design.md §6 type system:
+        Display  → Playfair Display  (closest open-source to "Feature Deck")
+        Body/UI  → DM Sans           (closest to "Aeonik Pro")
+        Mono     → DM Mono           (closest to "ABC Social Mono")
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+
+    <!-- ══════════════════════════════════════════════════════
+         CINEMATIC INTRO OVERLAY
+         Sits above .dashboard in the stacking order.
+         JS drives all state transitions via data-state attribute.
+         Removed from DOM after the homepage transition completes.
+    ═══════════════════════════════════════════════════════ -->
+    <div id="intro" class="intro" aria-live="polite" aria-atomic="false" role="region" aria-label="Welcome">
+
+      <!-- Warm light beam (GPU: transform + opacity only) -->
+      <div class="intro-beam" aria-hidden="true"></div>
+
+      <!-- Sequential greeting text -->
+      <div class="intro-text" aria-hidden="true">
+        <p class="intro-word" id="intro-hi">Hi,</p>
+        <p class="intro-word" id="intro-welcome">Welcome.</p>
+
+        <!-- Inline name prompt: "Your name is ___" -->
+        <p class="intro-word intro-name-line" id="intro-name-line">
+          <span class="intro-name-prefix">Your name is</span>
+          <span class="intro-name-input-wrap">
+            <input
+              type="text"
+              id="intro-name-input"
+              class="intro-name-input"
+              placeholder="…"
+              maxlength="40"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="words"
+              spellcheck="false"
+              aria-label="Enter your name"
+            />
+            <button
+              id="intro-submit-btn"
+              class="intro-submit-btn"
+              aria-label="Submit name"
+              tabindex="0"
+            >
+              <!-- Arrow icon -->
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <line x1="3" y1="10" x2="17" y2="10"/>
+                <polyline points="11 4 17 10 11 16"/>
+              </svg>
+            </button>
+          </span>
+        </p>
+
+        <!-- Confirmation line: "Nice to meet you, {name}." -->
+        <p class="intro-word" id="intro-confirm"></p>
+      </div>
+
+    </div><!-- /#intro -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         MAIN DASHBOARD  (hidden until intro completes)
+    ═══════════════════════════════════════════════════════ -->
+
+    <!-- bg-blobs kept in DOM; CSS sets display:none in light theme -->
+    <div class="bg-blob blob-1" aria-hidden="true"></div>
+    <div class="bg-blob blob-2" aria-hidden="true"></div>
+    <div class="bg-blob blob-3" aria-hidden="true"></div>
+
+    <div class="dashboard">
+
+      <!-- ══ GREETING / HERO STRIP ══════════════════════════ -->
+      <section class="card greeting-card" id="greeting-card" aria-label="Greeting and clock">
+        <div class="greeting-left">
+          <p class="greeting-label" id="greeting-text">Good morning</p>
+          <!-- JS populates the name via data-name attribute -->
+          <h1 class="greeting-name" id="greeting-name">Welcome back</h1>
+          <p class="greeting-sub" id="greeting-sub">Have a productive day.</p>
+        </div>
+        <div class="greeting-right" aria-live="polite" aria-atomic="true">
+          <div class="clock-time" id="clock-time">00:00:00</div>
+          <div class="clock-date" id="clock-date">Loading…</div>
+        </div>
+      </section>
+
+      <!-- ══ MAIN CONTENT GRID ═══════════════════════════════ -->
+      <div class="main-grid">
+
+        <!-- ── FOCUS TIMER ──────────────────────────────── -->
+        <section class="card timer-card" aria-label="Focus timer">
+          <div class="card-header">
+            <span class="card-icon" aria-hidden="true">⏱️</span>
+            <h2 class="card-title">Focus Timer</h2>
+            <span class="timer-mode-badge" id="timer-mode-badge" aria-live="polite">Focus</span>
+          </div>
+
+          <div class="timer-display-wrap">
+            <svg class="timer-ring" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+              <circle class="ring-bg"       cx="100" cy="100" r="88" />
+              <circle class="ring-progress" cx="100" cy="100" r="88" id="ring-progress" />
+            </svg>
+            <div class="timer-display" id="timer-display" aria-live="polite" aria-atomic="true">25:00</div>
+          </div>
+
+          <div class="timer-modes" role="group" aria-label="Timer mode">
+            <button class="mode-btn active" data-minutes="25" data-label="Focus">Focus</button>
+            <button class="mode-btn"        data-minutes="5"  data-label="Short Break">Short</button>
+            <button class="mode-btn"        data-minutes="15" data-label="Long Break">Long</button>
+          </div>
+
+          <div class="timer-controls">
+            <button class="btn-icon" id="timer-reset" aria-label="Reset timer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 .49-4"/>
+              </svg>
+            </button>
+            <button class="btn-primary" id="timer-start">Start</button>
+            <button class="btn-icon" id="timer-skip" aria-label="Skip session">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="5 4 15 12 5 20 5 4"/>
+                <line x1="19" y1="5" x2="19" y2="19"/>
+              </svg>
+            </button>
+          </div>
+
+          <p class="sessions-count">
+            Sessions today: <strong id="sessions-count">0</strong>
+          </p>
+        </section>
+
+        <!-- ── TO-DO LIST ────────────────────────────────── -->
+        <section class="card todo-card" aria-label="To-do list">
+          <div class="card-header">
+            <span class="card-icon" aria-hidden="true">✅</span>
+            <h2 class="card-title">To-Do List</h2>
+            <span class="todo-count-badge" id="todo-count-badge" aria-live="polite">0 left</span>
+          </div>
+
+          <div class="todo-input-row">
+            <!-- Priority selector -->
+            <select id="todo-priority" class="todo-priority-select" aria-label="Task priority">
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+            <input
+              type="text"
+              id="todo-input"
+              class="todo-input"
+              placeholder="Add a new task…"
+              maxlength="120"
+              aria-label="New task"
+            />
+            <button class="btn-add" id="todo-add-btn" aria-label="Add task">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5"  y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Filter + Sort controls -->
+          <div class="todo-controls">
+            <div class="todo-filters" role="group" aria-label="Task filter">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn"        data-filter="active">Active</button>
+              <button class="filter-btn"        data-filter="done">Done</button>
+              <button class="filter-btn"        data-filter="high">🔴 High</button>
+              <button class="filter-btn"        data-filter="medium">🟡 Med</button>
+              <button class="filter-btn"        data-filter="low">🟢 Low</button>
+            </div>
+            <select id="todo-sort" class="todo-sort-select" aria-label="Sort tasks">
+              <option value="added">Added</option>
+              <option value="priority">Priority</option>
+              <option value="alpha">A → Z</option>
+              <option value="alpha-desc">Z → A</option>
+            </select>
+          </div>
+
+          <ul class="todo-list" id="todo-list" aria-label="Tasks" aria-live="polite"></ul>
+
+          <div class="todo-footer">
+            <span class="todo-footer-text" id="todo-done-text">0 of 0 done</span>
+            <button class="btn-ghost" id="todo-clear-done">Clear done</button>
+          </div>
+        </section>
+
+        <!-- ── QUICK LINKS ───────────────────────────────── -->
+        <section class="card links-card" aria-label="Quick links">
+          <div class="card-header">
+            <span class="card-icon" aria-hidden="true">🔗</span>
+            <h2 class="card-title">Quick Links</h2>
+            <button class="btn-ghost-small" id="add-link-btn">+ Add</button>
+          </div>
+
+          <div class="links-grid" id="links-grid"></div>
+
+          <div class="links-empty" id="links-empty" style="display:none" aria-live="polite">
+            <p>No links yet. Add your favourites.</p>
+          </div>
+        </section>
+
+      </div><!-- /main-grid -->
+    </div><!-- /dashboard -->
+
+
+    <!-- ══ ADD / EDIT LINK MODAL ══════════════════════════ -->
+    <div class="modal-overlay" id="link-modal"
+         aria-modal="true" role="dialog" aria-labelledby="link-modal-title"
+         style="display:none">
+      <div class="modal">
+        <h3 class="modal-title" id="link-modal-title">Add Quick Link</h3>
+        <label class="modal-label">Label
+          <input type="text" id="link-name-input" class="modal-input"
+                 placeholder="e.g. YouTube" maxlength="30" />
+        </label>
+        <label class="modal-label">URL
+          <input type="url" id="link-url-input" class="modal-input"
+                 placeholder="https://…" />
+        </label>
+        <label class="modal-label">Emoji / Icon (optional)
+          <input type="text" id="link-icon-input" class="modal-input"
+                 placeholder="e.g. 🎬" maxlength="4" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn-ghost"   id="link-modal-cancel">Cancel</button>
+          <button class="btn-primary" id="link-modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EDIT TASK MODAL ════════════════════════════════ -->
+    <div class="modal-overlay" id="task-modal"
+         aria-modal="true" role="dialog" aria-label="Edit task"
+         style="display:none">
+      <div class="modal">
+        <h3 class="modal-title">Edit Task</h3>
+        <label class="modal-label">Task
+          <input type="text" id="task-edit-input" class="modal-input" maxlength="120" />
+        </label>
+        <label class="modal-label">Priority
+          <select id="task-edit-priority" class="modal-input modal-select">
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn-ghost"   id="task-modal-cancel">Cancel</button>
+          <button class="btn-primary" id="task-modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating theme toggle — fixed bottom-right -->
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+      <!-- Sun icon (shown in dark mode) -->
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1"  x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22"  x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3"  y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <!-- Moon icon (shown in light mode) -->
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+
+    <!-- Single JS file (folder rule) -->
+    <script src="js/app.js"></script>
+  </body>
+</html>

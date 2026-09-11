@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Cross-check IDs and class names on save",
+      "trigger": "PostFileSave",
+      "description": "After saving app.js, styles.css, or index.html: cross-checks that every getElementById call in JS has a matching id in HTML, and every JS-generated class name exists in CSS.",
+      "matcher": "\\.(js|css|html)$",
+      "action": {
+        "type": "command",
+        "command": "node -e \"\nconst fs = require('fs');\nconst path = require('path');\nconst root = 'c:/Users/adiwi/OneDrive/Documents/Personal/Code/CodingCamp-24August26-MRizkiAdiwiganda';\n\nconst js  = fs.readFileSync(path.join(root,'js','app.js'),'utf8');\nconst css = fs.readFileSync(path.join(root,'css','styles.css'),'utf8');\nconst html= fs.readFileSync(path.join(root,'index.html'),'utf8');\n\nconst errors = [];\n\n// Every getElementById in JS must have a matching id in HTML (except toast which is dynamic)\nconst jsIds   = [...js.matchAll(/getElementById\\('([^']+)'\\)/g)].map(m=>m[1]).filter(id=>id!=='toast');\nconst htmlIds = [...html.matchAll(/id=\\\"([^\\\"]+)\\\"/g)].map(m=>m[1]);\nconst missingIds = jsIds.filter(id => !htmlIds.includes(id));\nif (missingIds.length) errors.push('FAIL ids used in JS but missing from HTML: ' + missingIds.join(', '));\n\n// Key JS-generated class names must exist in CSS\nconst requiredClasses = [\n  'todo-item','todo-checkbox','todo-task-text','todo-item-actions',\n  'priority-badge','priority-high','priority-medium','priority-low',\n  'priority-item-high','priority-item-medium','priority-item-low',\n  'link-item','link-icon','link-name','link-overlay',\n  'btn-action','intro-word','intro-word--visible',\n  'intro-name-input','intro-name-input--shake','dashboard-visible'\n];\nrequiredClasses.forEach(cls => {\n  if (!css.includes('.' + cls)) errors.push('FAIL .' + cls + ' missing from css/styles.css');\n});\n\nif (errors.length) { console.error(errors.join('\\n')); process.exit(1); }\nelse { console.log('OK — all IDs and class names are consistent'); }\n\"\n",
+        "timeout": 30
+      }
+    }
+  ]
+}

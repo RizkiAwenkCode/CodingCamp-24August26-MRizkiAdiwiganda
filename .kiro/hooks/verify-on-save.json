@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Verify JS syntax and folder rules on save",
+      "trigger": "PostFileSave",
+      "description": "After saving any .js, .css, or .html file: checks folder rules (1 file each in css/ and js/), verifies script/link paths are correct, and confirms the flash-prevention style is present.",
+      "matcher": "\\.(js|css|html)$",
+      "action": {
+        "type": "command",
+        "command": "node -e \"\nconst fs = require('fs');\nconst path = require('path');\nconst root = 'c:/Users/adiwi/OneDrive/Documents/Personal/Code/CodingCamp-24August26-MRizkiAdiwiganda';\n\nconst errors = [];\n\n// Folder rules\nconst cssFiles = fs.readdirSync(path.join(root,'css'));\nconst jsFiles  = fs.readdirSync(path.join(root,'js'));\nif (cssFiles.length !== 1) errors.push('FAIL css/ must contain exactly 1 file, found: ' + cssFiles.join(', '));\nif (jsFiles.length  !== 1) errors.push('FAIL js/  must contain exactly 1 file, found: ' + jsFiles.join(', '));\n\n// Script/link paths in HTML\nconst html = fs.readFileSync(path.join(root,'index.html'),'utf8');\nif (html.includes('src=\\\"app.js\\\"'))       errors.push('FAIL stale src=\\\"app.js\\\" in index.html — should be js/app.js');\nif (html.includes('href=\\\"styles.css\\\"'))  errors.push('FAIL stale href=\\\"styles.css\\\" in index.html — should be css/styles.css');\nif (!html.includes('visibility: hidden'))  errors.push('FAIL flash-prevention inline style missing from index.html');\n\nif (errors.length) { console.error(errors.join('\\n')); process.exit(1); }\nelse { console.log('OK — folder rules and HTML paths valid'); }\n\"\n",
+        "timeout": 30
+      }
+    }
+  ]
+}
